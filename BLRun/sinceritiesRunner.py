@@ -20,13 +20,19 @@ def generateInputs(RunnerObj):
     ExpressionData = pd.read_csv(RunnerObj.inputDir.joinpath(RunnerObj.exprData),
                                      header = 0, index_col = 0)
     PTData = pd.read_csv(RunnerObj.inputDir.joinpath(RunnerObj.cellData),
-                             header = 0, index_col = 0)
+                             header = 0)
+    PTData = PTData.set_index('CellID')
+
+    print(f"[DEBUG] PTData head:\n{PTData.head()}")
+    print(f"[DEBUG] PTData index: {PTData.index}")
+    print(f"[DEBUG] PTData columns: {PTData.columns}")
 
     colNames = PTData.columns
     for idx in range(len(colNames)):
         # Select cells belonging to each pseudotime trajectory
         colName = colNames[idx]
         index = PTData[colName].index[PTData[colName].notnull()]
+        print(f"[DEBUG] Index variable before .loc: {index}")
         exprName = "SINCERITIES/ExpressionData"+str(idx)+".csv"
         newExpressionData = ExpressionData.loc[:,index].T
         # Perform quantile binning as recommeded in the paper
@@ -54,6 +60,9 @@ def run(RunnerObj):
     PTData = pd.read_csv(RunnerObj.inputDir.joinpath(RunnerObj.cellData),
                              header = 0, index_col = 0)
 
+    # Select cells belonging to each pseudotime trajectory
+    index = PTData.index[PTData['PseudoTime'].notnull()] # Use PTData.index directly
+
     colNames = PTData.columns
     for idx in range(len(colNames)):
         inFile = "ExpressionData"+str(idx)+".csv"
@@ -63,7 +72,7 @@ def run(RunnerObj):
                              "data/" + str(outDir) + 'time'+str(idx)+'.txt', 'Rscript MAIN.R',
                              inputPath+inFile, outPath, '\"'])
         print(cmdToRun)
-        os.system(cmdToRun)
+        exit()
 
 
 def parseOutput(RunnerObj):
@@ -75,7 +84,8 @@ def parseOutput(RunnerObj):
     outDir = "outputs/"+str(RunnerObj.inputDir).split("inputs/")[1]+"/SINCERITIES/"
 
     PTData = pd.read_csv(RunnerObj.inputDir.joinpath(RunnerObj.cellData),
-                             header = 0, index_col = 0)
+                             header = 0)
+    PTData = PTData.set_index('CellID')
     colNames = PTData.columns
     OutSubDF = [0]*len(colNames)
     for idx in range(len(colNames)):
